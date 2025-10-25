@@ -13,8 +13,7 @@ import java.math.BigDecimal;
 
 @Getter
 @Setter
-@Component
-@EqualsAndHashCode
+@EqualsAndHashCode(of = "id")
 public class Account {
     @NotNull(message = "ID аккаунта не может быть null!")
     private Long id;

@@ -7,5 +7,6 @@ public enum Commands {
     ACCOUNT_CLOSE,
     ACCOUNT_DEPOSIT,
     ACCOUNT_TRANSFER,
-    ACCOUNT_WITHDRAW
+    ACCOUNT_WITHDRAW,
+    ZERO
 }

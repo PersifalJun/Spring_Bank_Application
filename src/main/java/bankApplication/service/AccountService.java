@@ -26,21 +26,29 @@ public class AccountService {
         Long accountId = accounts.stream()
                 .filter(Objects::nonNull).mapToLong(Account::getId).max().orElse(0L) + 1L;
         accountRepository.save(userId, new Account(accountId, userId, BigDecimal.ZERO));
+        System.out.println("Аккаунт создан!");
     }
 
-    public void closeAccount(Long userId, Long accountId) {
-        List<Account> accounts = getAccountList(userId);
-        Account accountToDelete = accountRepository.findByUserAndAccountId(userId, accountId).
-                orElseThrow(() -> new NoSuchElementException("Нечего удалять!"));
-        Account firstAccount = accounts.stream().
-                filter(Objects::nonNull).
-                filter(account -> Objects.equals(account.getId(), accounts.get(1).getId())).findFirst().
-                orElseThrow(() -> new NoSuchElementException("Нет первого счёта у клиента"));
+
+
+    public void closeAccount(Long accountId) {
+
+        Account accountToDelete = neededAccount(accountId,"Не найден нужный аккаунт для удаления!");
+        List<Account> accounts = null;
+        Long userId = null;
+        for(Map.Entry<Long,List<Account>> entry : accountRepository.getUserAccountsMap().entrySet()){
+            if(entry.getValue().contains(accountToDelete)){
+                accounts = entry.getValue();
+                userId = entry.getKey();
+            }
+        }
+        List<Account> finalAccounts = accounts;
+        Account firstAccount = neededAccount(finalAccounts.get(1).getId(),"Нет первого счёта у клиента");
 
         firstAccount.setMoneyAmount(firstAccount.getMoneyAmount().add(accountToDelete.getMoneyAmount()));
         try {
             accountRepository.deleteById(userId, accountId);
-            System.out.println("Аккаунт : " + accountRepository.findByUserAndAccountId(userId, accountId).orElseThrow(
+            System.out.println("Аккаунт : " + accountRepository.findByUserIdAndAccountId(userId, accountId).orElseThrow(
                     () -> new NoSuchElementException("Ничего не найдено!")) +
                     " удалён у пользователя c id: " + userId);
         } catch (NullPointerException ex) {
@@ -55,6 +63,7 @@ public class AccountService {
                 "Не найден счет для внесения депозита");
 
         accountToMakeDeposit.setMoneyAmount(accountToMakeDeposit.getMoneyAmount().add(sum));
+        System.out.println("Текущий счет: " + accountToMakeDeposit.getMoneyAmount() + "у аккаунта с Id: " + accountId);
 
 
     }

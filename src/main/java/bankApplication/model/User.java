@@ -11,8 +11,7 @@ import java.util.List;
 
 @Getter
 @Setter
-@EqualsAndHashCode
-@Component
+@EqualsAndHashCode(of = "id")
 @AllArgsConstructor
 public class User {
     @NotNull(message = "ID пользователя не может быть null!")
