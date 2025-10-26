@@ -1,13 +1,17 @@
 package bankApplication.service;
 
 import bankApplication.commands.Commands;
+import bankApplication.exceptions.NotEnoughAccountsException;
+import bankApplication.exceptions.NotEnoughMoneyException;
+import bankApplication.exceptions.RegistryException;
 import jakarta.annotation.PostConstruct;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.NoSuchElementException;
 import java.util.Scanner;
-
 
 @Service
 public class OperationsConsoleListener {
@@ -27,35 +31,41 @@ public class OperationsConsoleListener {
         consoleThread.start();
     }
 
+    private void printCommands() {
+        System.out.println("Выберите действие:" + "\n-USER_CREATE" +
+                "\n-SHOW_ALL_USERS" + "\n-ACCOUNT_CREATE" +
+                "\n-ACCOUNT_CLOSE" + "\n-ACCOUNT_DEPOSIT" + "\n-ACCOUNT_TRANSFER" + "\n-ACCOUNT_WITHDRAW" +
+                "\n-ZERO->Выход");
+    }
+
     private void runConsole() {
-        System.out.println("Выберите действие:" + "\n1.USER_CREATE" +
-                "\n2.SHOW_ALL_USERS" + "\n3.ACCOUNT_CREATE" +
-                "\n4.ACCOUNT_CLOSE" + "\n5.ACCOUNT_DEPOSIT" + "\n6.ACCOUNT_TRANSFER" + "\n7.ACCOUNT_WITHDRAW" +
-                "\nZERO->Выход");
 
         boolean running = true;
-
         while (running) {
-
             try {
+                printCommands();
                 String raw = scanner.nextLine().trim().toUpperCase();
                 if ("ZERO".equals(raw)) {
+                    System.out.println("Выход");
                     running = false;
-                    return;
                 }
                 Commands commands;
                 try {
                     commands = Commands.valueOf(raw);
                 } catch (IllegalArgumentException ex) {
                     System.out.println("Неизвестная команда");
-                    return;
+                    continue;
                 }
                 switch (commands) {
                     case USER_CREATE -> {
                         System.out.println("Создание пользователя");
                         System.out.println("Введите логин пользователя:");
                         String login = scanner.nextLine();
-                        userService.createUser(login);
+                        try {
+                            userService.createUser(login);
+                        } catch (ConstraintViolationException | RegistryException ex) {
+                            System.out.println(ex.getMessage());
+                        }
                     }
                     case SHOW_ALL_USERS -> {
                         System.out.println("Все пользователи:");
@@ -64,68 +74,69 @@ public class OperationsConsoleListener {
                     case ACCOUNT_CREATE -> {
                         System.out.println("Создание аккаунта:");
                         System.out.println("Введите Id пользователя:");
-                        Long id = null;
                         try {
-                            id = Long.parseLong(scanner.nextLine());
-                        } catch (NullPointerException ex) {
-                            ex.getMessage();
+                            Long id = Long.parseLong(scanner.nextLine());
+                            accountService.createAccount(id);
+                        } catch (ConstraintViolationException | NullPointerException | NoSuchElementException ex) {
+                            System.out.println(ex.getMessage());
+                        } catch (NumberFormatException ex) {
+                            System.out.println("Неправильный формат ввода id");
                         }
-                        accountService.createAccount(id);
                     }
                     case ACCOUNT_CLOSE -> {
                         System.out.println("Введите Id аккаунта для закрытия:");
-                        Long id = null;
                         try {
-                            id = Long.parseLong(scanner.nextLine());
-                        } catch (NullPointerException ex) {
-                            ex.getMessage();
+                            Long id = Long.parseLong(scanner.nextLine());
+                            accountService.closeAccount(id);
+                        } catch (ConstraintViolationException |
+                                 NotEnoughAccountsException | NullPointerException
+                                 | NoSuchElementException ex) {
+                            System.out.println(ex.getMessage());
+                        } catch (NumberFormatException ex) {
+                            System.out.println("Неправильный формат ввода id");
                         }
-                        accountService.closeAccount(id);
                     }
                     case ACCOUNT_DEPOSIT -> {
                         System.out.println("Введите Id аккаунта и сумму для внесения депозита:");
-                        Long id = null;
-                        BigDecimal sum = null;
                         try {
-                            id = Long.parseLong(scanner.nextLine());
-                            sum = scanner.nextBigDecimal();
-                        } catch (NullPointerException ex) {
-                            ex.getMessage();
+                            Long id = Long.parseLong(scanner.nextLine());
+                            BigDecimal sum = new BigDecimal(scanner.nextLine().trim());
+                            accountService.makeDeposit(id, sum);
+                        } catch (ConstraintViolationException | NoSuchElementException
+                                 | NullPointerException ex) {
+                            System.out.println(ex.getMessage());
+                        } catch (NumberFormatException ex) {
+                            System.out.println("Неправильный формат ввода id или суммы");
                         }
-                        accountService.makeDeposit(id, sum);
                     }
                     case ACCOUNT_TRANSFER -> {
                         System.out.println("Введите Id счёта отправителя,Id счёта получателя и сумму для перевода средств:");
-                        Long senderId = null;
-                        Long recepientId = null;
-                        BigDecimal sum = null;
                         try {
-                            senderId = Long.parseLong(scanner.nextLine());
-                            recepientId = Long.parseLong(scanner.nextLine());
-                            sum = scanner.nextBigDecimal();
-                        } catch (NullPointerException ex) {
-                            ex.getMessage();
+                            Long senderId = Long.parseLong(scanner.nextLine());
+                            Long recipientId = Long.parseLong(scanner.nextLine());
+                            BigDecimal sum = new BigDecimal(scanner.nextLine().trim());
+                            accountService.transfer(senderId, recipientId, sum);
+                        } catch (ConstraintViolationException |
+                                 NotEnoughAccountsException | NullPointerException |
+                                 NoSuchElementException | NotEnoughMoneyException ex) {
+                            System.out.println(ex.getMessage());
+                        } catch (NumberFormatException ex) {
+                            System.out.println("Неправильный формат ввода id или суммы");
                         }
-                        if(sum==null){
-                            throw new NullPointerException("Некорректная сумма!");
-                        }
-                        accountService.transfer(senderId, recepientId, sum);
                     }
                     case ACCOUNT_WITHDRAW -> {
                         System.out.println("Введите Id счёта и сумму для снятия средств:");
-                        Long id = null;
-                        BigDecimal sum = null;
                         try {
-                            id = Long.parseLong(scanner.nextLine());
-                            sum = scanner.nextBigDecimal();
-                        } catch (NullPointerException ex) {
-                            ex.getMessage();
+                            Long id = Long.parseLong(scanner.nextLine());
+                            BigDecimal sum = new BigDecimal(scanner.nextLine().trim());
+                            accountService.withdraw(id, sum);
+                        } catch (ConstraintViolationException |
+                                 NotEnoughAccountsException | NullPointerException |
+                                 NoSuchElementException | NotEnoughMoneyException ex) {
+                            System.out.println(ex.getMessage());
+                        } catch (NumberFormatException ex) {
+                            System.out.println("Неправильный формат ввода id или суммы");
                         }
-                        accountService.withdraw(id, sum);
-                    }
-                    case ZERO -> {
-                        System.out.println("Выход");
-                        running = false;
                     }
                 }
             } catch (NullPointerException ex) {

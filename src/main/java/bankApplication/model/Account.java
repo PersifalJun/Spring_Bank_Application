@@ -1,13 +1,10 @@
 package bankApplication.model;
 
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 
@@ -17,13 +14,13 @@ import java.math.BigDecimal;
 public class Account {
     @NotNull(message = "ID аккаунта не может быть null!")
     private Long id;
-    @NotBlank(message = "Аккаунт должен быть привязан к пользователю!")
+    @NotNull(message = "Аккаунт должен быть привязан к пользователю!")
     private Long userId;
-    @Min(0)
+    @DecimalMin(value = "0.00")
     private BigDecimal moneyAmount;
 
     public Account(Long id, Long userId,
-                   @Value("${account.default-amount}") BigDecimal moneyAmount) {
+                   BigDecimal moneyAmount) {
         this.id = id;
         this.userId = userId;
         this.moneyAmount = moneyAmount;

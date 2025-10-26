@@ -1,11 +1,11 @@
 package bankApplication.model;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 
@@ -16,11 +16,10 @@ import java.util.List;
 public class User {
     @NotNull(message = "ID пользователя не может быть null!")
     private Long id;
-    @NotNull(message = "Login пользователя не может быть пустым")
+    @NotBlank(message = "Login пользователя не может быть пустым")
     private String login;
+    @NotNull(message = "Аккаунты пользователя не могут быть null")
     private List<Account> accountList;
-
-
 
     @Override
     public String toString() {
