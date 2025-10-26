@@ -140,7 +140,7 @@ public class OperationsConsoleListener {
                     }
                 }
             } catch (NullPointerException ex) {
-                ex.getMessage();
+                System.out.println(ex.getMessage());
             }
         }
     }
