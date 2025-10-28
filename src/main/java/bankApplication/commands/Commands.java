@@ -8,5 +8,4 @@ public enum Commands {
     ACCOUNT_DEPOSIT,
     ACCOUNT_TRANSFER,
     ACCOUNT_WITHDRAW,
-    ZERO
 }

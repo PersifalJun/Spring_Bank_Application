@@ -1,57 +1,63 @@
 package bankApplication.service;
 
 import bankApplication.commands.Commands;
-import bankApplication.exceptions.NotEnoughAccountsException;
-import bankApplication.exceptions.NotEnoughMoneyException;
-import bankApplication.exceptions.RegistryException;
-import jakarta.annotation.PostConstruct;
+import bankApplication.exceptions.*;
+import bankApplication.model.Account;
+import bankApplication.model.User;
+import bankApplication.ref.AccountRefUser;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.NoSuchElementException;
 import java.util.Scanner;
 
 @Service
 public class OperationsConsoleListener {
     private final AccountService accountService;
     private final UserService userService;
-    private Scanner scanner = new Scanner(System.in);
+    private final AccountRefUser accountRefUser;
+    private static final String ZERO = "ZERO";
+    private final Scanner scanner = new Scanner(System.in);
 
     @Autowired
-    public OperationsConsoleListener(AccountService accountService, UserService userService) {
+    public OperationsConsoleListener(AccountService accountService, UserService userService, AccountRefUser accountRefUser) {
         this.accountService = accountService;
         this.userService = userService;
+        this.accountRefUser = accountRefUser;
     }
 
-    @PostConstruct
+
     public void start() {
         Thread consoleThread = new Thread(this::runConsole, "console-loop");
         consoleThread.start();
     }
 
-    private void printCommands() {
-        System.out.println("Выберите действие:" + "\n-USER_CREATE" +
-                "\n-SHOW_ALL_USERS" + "\n-ACCOUNT_CREATE" +
-                "\n-ACCOUNT_CLOSE" + "\n-ACCOUNT_DEPOSIT" + "\n-ACCOUNT_TRANSFER" + "\n-ACCOUNT_WITHDRAW" +
-                "\n-ZERO->Выход");
+    public void printCommands() {
+        Commands[] commands = Commands.values();
+        System.out.println("Выберите действие:");
+        for (Commands command : commands) {
+            System.out.println("- " + command);
+        }
+        System.out.println("- ZERO->Выход");
     }
+
 
     private void runConsole() {
 
         boolean running = true;
         while (running) {
             try {
-                printCommands();
-                String raw = scanner.nextLine().trim().toUpperCase();
-                if ("ZERO".equals(raw)) {
+                String command = scanner.nextLine().trim().toUpperCase();
+                if (command.equalsIgnoreCase(ZERO)) {
                     System.out.println("Выход");
                     running = false;
+                    continue;
+
                 }
                 Commands commands;
                 try {
-                    commands = Commands.valueOf(raw);
+                    commands = Commands.valueOf(command);
                 } catch (IllegalArgumentException ex) {
                     System.out.println("Неизвестная команда");
                     continue;
@@ -60,88 +66,125 @@ public class OperationsConsoleListener {
                     case USER_CREATE -> {
                         System.out.println("Создание пользователя");
                         System.out.println("Введите логин пользователя:");
-                        String login = scanner.nextLine();
-                        try {
-                            userService.createUser(login);
-                        } catch (ConstraintViolationException | RegistryException ex) {
-                            System.out.println(ex.getMessage());
-                        }
+                        createUser();
                     }
                     case SHOW_ALL_USERS -> {
                         System.out.println("Все пользователи:");
-                        userService.showAllUsers();
+                        showAllUsers();
                     }
                     case ACCOUNT_CREATE -> {
                         System.out.println("Создание аккаунта:");
                         System.out.println("Введите Id пользователя:");
-                        try {
-                            Long id = Long.parseLong(scanner.nextLine());
-                            accountService.createAccount(id);
-                        } catch (ConstraintViolationException | NullPointerException | NoSuchElementException ex) {
-                            System.out.println(ex.getMessage());
-                        } catch (NumberFormatException ex) {
-                            System.out.println("Неправильный формат ввода id");
-                        }
+                        createAccount();
                     }
                     case ACCOUNT_CLOSE -> {
                         System.out.println("Введите Id аккаунта для закрытия:");
-                        try {
-                            Long id = Long.parseLong(scanner.nextLine());
-                            accountService.closeAccount(id);
-                        } catch (ConstraintViolationException |
-                                 NotEnoughAccountsException | NullPointerException
-                                 | NoSuchElementException ex) {
-                            System.out.println(ex.getMessage());
-                        } catch (NumberFormatException ex) {
-                            System.out.println("Неправильный формат ввода id");
-                        }
+                        closeAccount();
                     }
                     case ACCOUNT_DEPOSIT -> {
                         System.out.println("Введите Id аккаунта и сумму для внесения депозита:");
-                        try {
-                            Long id = Long.parseLong(scanner.nextLine());
-                            BigDecimal sum = new BigDecimal(scanner.nextLine().trim());
-                            accountService.makeDeposit(id, sum);
-                        } catch (ConstraintViolationException | NoSuchElementException
-                                 | NullPointerException ex) {
-                            System.out.println(ex.getMessage());
-                        } catch (NumberFormatException ex) {
-                            System.out.println("Неправильный формат ввода id или суммы");
-                        }
+                        makeDeposit();
+
                     }
                     case ACCOUNT_TRANSFER -> {
-                        System.out.println("Введите Id счёта отправителя,Id счёта получателя и сумму для перевода средств:");
-                        try {
-                            Long senderId = Long.parseLong(scanner.nextLine());
-                            Long recipientId = Long.parseLong(scanner.nextLine());
-                            BigDecimal sum = new BigDecimal(scanner.nextLine().trim());
-                            accountService.transfer(senderId, recipientId, sum);
-                        } catch (ConstraintViolationException |
-                                 NotEnoughAccountsException | NullPointerException |
-                                 NoSuchElementException | NotEnoughMoneyException ex) {
-                            System.out.println(ex.getMessage());
-                        } catch (NumberFormatException ex) {
-                            System.out.println("Неправильный формат ввода id или суммы");
-                        }
+                        System.out.println("Введите Id счёта отправителя," +
+                                "Id счёта получателя и сумму для перевода средств:");
+                        transfer();
                     }
                     case ACCOUNT_WITHDRAW -> {
                         System.out.println("Введите Id счёта и сумму для снятия средств:");
-                        try {
-                            Long id = Long.parseLong(scanner.nextLine());
-                            BigDecimal sum = new BigDecimal(scanner.nextLine().trim());
-                            accountService.withdraw(id, sum);
-                        } catch (ConstraintViolationException |
-                                 NotEnoughAccountsException | NullPointerException |
-                                 NoSuchElementException | NotEnoughMoneyException ex) {
-                            System.out.println(ex.getMessage());
-                        } catch (NumberFormatException ex) {
-                            System.out.println("Неправильный формат ввода id или суммы");
-                        }
+                        withdraw();
                     }
+
                 }
+
             } catch (NullPointerException ex) {
                 System.out.println(ex.getMessage());
             }
+        }
+    }
+
+    private void createUser() {
+        String login = scanner.nextLine();
+        try {
+            User newUser = userService.createUser(login);
+            accountRefUser.addNewUserToAccountsMap(newUser);
+            System.out.println("Пользователь с логином: " + newUser.getLogin() + " создан");
+        } catch (ConstraintViolationException | RegistryException ex) {
+            System.out.println(ex.getMessage());
+        }
+    }
+
+    private void showAllUsers() {
+        userService.showAllUsers().forEach(System.out::println);
+    }
+
+    private void createAccount() {
+        try {
+            Long userId = Long.parseLong(scanner.nextLine());
+            accountService.createAccount(userId);
+            System.out.println("Аккаунт создан для пользователя с id " + userId);
+        } catch (ConstraintViolationException | NoUserException | NoAccountException ex) {
+            System.out.println(ex.getMessage());
+        } catch (NumberFormatException ex) {
+            System.out.println("Неправильный формат ввода id");
+        }
+    }
+
+    private void closeAccount() {
+        try {
+            Long accountId = Long.parseLong(scanner.nextLine());
+            accountService.closeAccount(accountId);
+            System.out.println("Аккаунт закрыт c id: " + accountId + " закрыт");
+        } catch (ConstraintViolationException |
+                 NotEnoughAccountsException | NoAccountException | NoUserException |
+                 FirstAccountClosedException ex) {
+            System.out.println(ex.getMessage());
+        } catch (NumberFormatException ex) {
+            System.out.println("Неправильный формат ввода id");
+        }
+    }
+
+    private void makeDeposit() {
+        try {
+            Long id = Long.parseLong(scanner.nextLine());
+            BigDecimal sum = new BigDecimal(scanner.nextLine().trim());
+            Account accountToMakeDeposit = accountService.makeDeposit(id, sum);
+            System.out.println("Текущий счет: " + accountToMakeDeposit.getMoneyAmount() + " у аккаунта с Id: " + accountToMakeDeposit.getId());
+        } catch (ConstraintViolationException | NoAccountException ex) {
+            System.out.println(ex.getMessage());
+        } catch (NumberFormatException ex) {
+            System.out.println("Неправильный формат ввода id или суммы");
+        }
+    }
+
+    private void transfer() {
+        try {
+            Long senderId = Long.parseLong(scanner.nextLine());
+            Long recipientId = Long.parseLong(scanner.nextLine());
+            BigDecimal sum = new BigDecimal(scanner.nextLine().trim());
+            Account senderAccount = accountService.transfer(senderId, recipientId, sum);
+            System.out.println("Текущее кол-во средств для аккаунта отправителя: " + senderAccount.getMoneyAmount());
+        } catch (IdenticalAccountException | ConstraintViolationException |
+                 NotEnoughAccountsException | NoAccountException | SameSenderException |
+                 NotEnoughMoneyException ex) {
+            System.out.println(ex.getMessage());
+        } catch (NumberFormatException ex) {
+            System.out.println("Неправильный формат ввода id или суммы");
+        }
+    }
+
+    private void withdraw() {
+        try {
+            Long id = Long.parseLong(scanner.nextLine());
+            BigDecimal sum = new BigDecimal(scanner.nextLine().trim());
+            Account accountToWithdraw = accountService.withdraw(id, sum);
+            System.out.println("Текущее кол-во средств после снятия: " + accountToWithdraw.getMoneyAmount());
+        } catch (ConstraintViolationException | NoAccountException |
+                 NotEnoughMoneyException ex) {
+            System.out.println(ex.getMessage());
+        } catch (NumberFormatException ex) {
+            System.out.println("Неправильный формат ввода id или суммы");
         }
     }
 }

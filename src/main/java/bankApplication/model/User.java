@@ -1,5 +1,7 @@
 package bankApplication.model;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -14,9 +16,11 @@ import java.util.List;
 @EqualsAndHashCode(of = "id")
 @AllArgsConstructor
 public class User {
-    @NotNull(message = "ID пользователя не может быть null!")
+    @NotNull(message = "Идентификатор пользователя не может быть null")
     private Long id;
-    @NotBlank(message = "Login пользователя не может быть пустым")
+    @NotBlank(message = "Логин пользователя не может быть пустым")
+    @Min(1)
+    @Max(20)
     private String login;
     @NotNull(message = "Аккаунты пользователя не могут быть null")
     private List<Account> accountList;

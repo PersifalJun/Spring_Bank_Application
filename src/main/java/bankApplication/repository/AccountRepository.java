@@ -1,5 +1,7 @@
 package bankApplication.repository;
 
+import bankApplication.exceptions.NoAccountException;
+import bankApplication.exceptions.NoUserException;
 import bankApplication.model.Account;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.stereotype.Repository;
@@ -17,27 +19,34 @@ public class AccountRepository {
     }
 
     public void save(@NotNull Long userId, Account account) {
-        if (Objects.nonNull(account)) {
-            userAccountsMap.computeIfAbsent(userId, id -> new ArrayList<>()).add(account);
+        if (Objects.isNull(account)) {
+            throw new NoAccountException("Аккаунт не найден!");
         }
+        if (userAccountsMap.containsKey(userId)) {
+            userAccountsMap.get(userId).add(account);
+        } else {
+            throw new NoUserException("Нет пользователя для добавления аккаунта!");
+        }
+
     }
 
-    public Account findById(@NotNull Long accountId, String exceptionMessage) {
+    public Account findById(@NotNull Long accountId) {
         return userAccountsMap.values().stream().
                 filter(Objects::nonNull).
                 flatMap(Collection::stream).
-                filter(account -> Objects.equals(account.getId(), accountId)).findFirst()
-                .orElseThrow(() -> new NoSuchElementException(exceptionMessage));
-
+                filter(account -> Objects.equals(account.getId(), accountId)).findFirst().
+                orElseThrow(() -> new NoAccountException("Аккаунт не найден"));
     }
 
     public void deleteById(@NotNull Long userId, @NotNull Long accountId) {
-        userAccountsMap.getOrDefault(userId, List.of())
-                .removeIf(account -> Objects.equals(account.getId(), accountId));
+        List<Account> userAccounts = userAccountsMap.get(userId);
+        Account accountToDelete = userAccounts.stream().
+                filter(account -> Objects.equals(account.getId(), accountId)).
+                findFirst().orElseThrow(() -> new NoAccountException("Аккаунт не найден"));
+        userAccounts.remove(accountToDelete);
     }
 
     public Map<Long, List<Account>> getUserAccountsMap() {
         return userAccountsMap;
     }
-
 }
