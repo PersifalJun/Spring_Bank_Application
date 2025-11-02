@@ -97,23 +97,39 @@ public class AccountService {
         try {
             recipientAccount = accountRepository.findById(accountIdRecipient);
         } catch (RuntimeException ex) {
-            throw new NoAccountException("Не найден аккаунт отправителя");
+            throw new NoAccountException("Не найден аккаунт получателя");
         }
         User sender = accountRefUser.identifyUserByAccount(senderAccount);
         User recipient = accountRefUser.identifyUserByAccount(recipientAccount);
 
-        if (senderAccount.equals(recipientAccount)) {
-            throw new IdenticalAccountException("Счета аккаунтов идентичны");
-        } else if (senderAccount.getMoneyAmount().compareTo(sum) < 0) {
-            throw new NotEnoughMoneyException("Недостаточно средств для перевода!");
-
-        } else if (sender.getId().equals(recipient.getId())) {
-            throw new SameSenderException("Нельзя осуществлять перевод средств между своими счетами!");
-        } else {
+        try{
+            checkAccountEqualsRecipientAccount(senderAccount,recipientAccount);
+            checkNotEnoughMoneyToTransfer(senderAccount,sum);
+            checkSenderAccountEqualsRecipient(sender,recipient);
             recipientAccount.setMoneyAmount(recipientAccount.getMoneyAmount().add(sum.subtract(commission)));
             senderAccount.setMoneyAmount(senderAccount.getMoneyAmount().subtract(sum));
+        }catch(IdenticalAccountException | NotEnoughMoneyException | SameSenderException  ex){
+            System.out.println(ex.getMessage());
         }
         return senderAccount;
+    }
+    private void checkAccountEqualsRecipientAccount(Account senderAccount,Account recipientAccount){
+        if (senderAccount.equals(recipientAccount)) {
+            throw new IdenticalAccountException("Счета аккаунтов идентичны");
+        }
+
+    }
+    private void checkNotEnoughMoneyToTransfer(Account senderAccount,BigDecimal sum){
+        if (senderAccount.getMoneyAmount().compareTo(sum) < 0) {
+            throw new NotEnoughMoneyException("Недостаточно средств для перевода!");
+        }
+
+    }
+    private void checkSenderAccountEqualsRecipient(User sender,User recipient){
+        if (sender.getId().equals(recipient.getId())) {
+            throw new SameSenderException("Нельзя осуществлять перевод средств между своими счетами!");
+        }
+
     }
 
     public Account withdraw(@NotNull Long accountId, @DecimalMin(value = "10.00") BigDecimal sum) {
@@ -125,4 +141,6 @@ public class AccountService {
         }
         return accountToWithdraw;
     }
+
+
 }

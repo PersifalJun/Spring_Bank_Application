@@ -19,8 +19,8 @@ public class User {
     @NotNull(message = "Идентификатор пользователя не может быть null")
     private Long id;
     @NotBlank(message = "Логин пользователя не может быть пустым")
-    @Min(1)
-    @Max(20)
+    @Min(value = 1,  message = "Логин должен быть ≥ 1")
+    @Max(value = 20,  message = "Значение должен быть ≤ 20")
     private String login;
     @NotNull(message = "Аккаунты пользователя не могут быть null")
     private List<Account> accountList;

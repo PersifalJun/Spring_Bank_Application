@@ -17,7 +17,7 @@ public class OperationsConsoleListener {
     private final AccountService accountService;
     private final UserService userService;
     private final AccountRefUser accountRefUser;
-    private static final String ZERO = "ZERO";
+    private static final String EXIT = "EXIT";
     private final Scanner scanner = new Scanner(System.in);
 
     @Autowired
@@ -39,7 +39,7 @@ public class OperationsConsoleListener {
         for (Commands command : commands) {
             System.out.println("- " + command);
         }
-        System.out.println("- ZERO->Выход");
+        System.out.println("- EXIT->Выход");
     }
 
 
@@ -49,7 +49,7 @@ public class OperationsConsoleListener {
         while (running) {
             try {
                 String command = scanner.nextLine().trim().toUpperCase();
-                if (command.equalsIgnoreCase(ZERO)) {
+                if (command.equalsIgnoreCase(EXIT)) {
                     System.out.println("Выход");
                     running = false;
                     continue;
@@ -107,7 +107,7 @@ public class OperationsConsoleListener {
     private void createUser() {
         String login = scanner.nextLine();
         try {
-            User newUser = userService.createUser(login);
+            User newUser = userService.createUser(login).orElseThrow(()->new NoUserException("Пользователь не найден!"));
             accountRefUser.addNewUserToAccountsMap(newUser);
             System.out.println("Пользователь с логином: " + newUser.getLogin() + " создан");
         } catch (ConstraintViolationException | RegistryException ex) {
@@ -165,9 +165,8 @@ public class OperationsConsoleListener {
             BigDecimal sum = new BigDecimal(scanner.nextLine().trim());
             Account senderAccount = accountService.transfer(senderId, recipientId, sum);
             System.out.println("Текущее кол-во средств для аккаунта отправителя: " + senderAccount.getMoneyAmount());
-        } catch (IdenticalAccountException | ConstraintViolationException |
-                 NotEnoughAccountsException | NoAccountException | SameSenderException |
-                 NotEnoughMoneyException ex) {
+        } catch (ConstraintViolationException |
+                 NotEnoughAccountsException | NoAccountException ex) {
             System.out.println(ex.getMessage());
         } catch (NumberFormatException ex) {
             System.out.println("Неправильный формат ввода id или суммы");

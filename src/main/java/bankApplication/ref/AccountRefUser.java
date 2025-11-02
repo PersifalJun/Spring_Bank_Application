@@ -5,7 +5,6 @@ import bankApplication.model.Account;
 import bankApplication.model.User;
 import bankApplication.repository.AccountRepository;
 import bankApplication.repository.UserRepository;
-import jakarta.validation.constraints.NotNull;
 import org.springframework.stereotype.Component;
 
 import java.util.*;

@@ -22,12 +22,12 @@ public class AccountRepository {
         if (Objects.isNull(account)) {
             throw new NoAccountException("Аккаунт не найден!");
         }
-        if (userAccountsMap.containsKey(userId)) {
-            userAccountsMap.get(userId).add(account);
-        } else {
+        else if(!userAccountsMap.containsKey(userId)){
             throw new NoUserException("Нет пользователя для добавления аккаунта!");
         }
-
+        else {
+            userAccountsMap.get(userId).add(account);
+        }
     }
 
     public Account findById(@NotNull Long accountId) {

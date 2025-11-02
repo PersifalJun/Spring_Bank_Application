@@ -17,10 +17,11 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 @Validated
-@Transactional
 @Service
+@Transactional(readOnly = true)
 public class UserService {
     private final UserRepository userRepository;
     private final AccountRefUser accountRefUser;
@@ -37,7 +38,8 @@ public class UserService {
         return userRepository.getUsers();
     }
 
-    public User createUser(@NotBlank String login) {
+    @Transactional
+    public Optional<User> createUser(@NotBlank String login) {
         User user = null;
         if (!isRegistered(login)) {
             long id = userRepository.getUsers().stream().
@@ -50,7 +52,7 @@ public class UserService {
             user = new User(id + 1L, login, accounts);
             userRepository.save(user);
         }
-        return user;
+        return Optional.of(user);
     }
 
     private boolean isRegistered(@NotBlank String login) {
