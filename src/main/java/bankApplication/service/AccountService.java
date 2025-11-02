@@ -70,15 +70,16 @@ public class AccountService {
             Account firstAccount = accountRepository.findById(finalAccounts.get(0).getId());
             firstAccount.setMoneyAmount(firstAccount.getMoneyAmount().add(accountToDelete.getMoneyAmount()));
             printAccountClosed(accountId);
+            try {
+                accountRepository.deleteById(userId, accountId);
+            } catch (RuntimeException ex) {
+                throw new NoAccountException("Не найден аккаунт для удаления");
+            }
+
         } catch (NotEnoughAccountsException | FirstAccountClosedException ex) {
             System.out.println(ex.getMessage());
         }
-        try {
-            accountRepository.deleteById(userId, accountId);
-        } catch (RuntimeException ex) {
-            throw new NoAccountException("Не найден аккаунт для удаления");
-            }
-        }
+    }
 
     private void checkAccountListSizeEqualsOne(List<Account> accounts) {
         if (accounts.size() == 1) {
