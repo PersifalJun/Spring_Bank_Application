@@ -14,7 +14,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 @Transactional
 @Validated
@@ -59,31 +62,50 @@ public class AccountService {
             }
         }
         @NotNull List<Account> finalAccounts = accounts;
-        if (finalAccounts.size() == 1) {
-            throw new NotEnoughAccountsException("У пользователя всего один счет. Он не может его закрыть");
-        } else if (finalAccounts.isEmpty()) {
-            throw new NotEnoughAccountsException("У пользователя нет счетов");
-        } else if (finalAccounts.get(0).getId().equals(accountId)) {
-            throw new FirstAccountClosedException("Нельзя закрыть первый аккаунт пользователя");
-        } else {
+
+        try {
+            checkAccountListSizeEqualsOne(finalAccounts);
+            checkAccountSizeIsEmpty(finalAccounts);
+            checkFirstAccountCanNotBeClosed(finalAccounts, accountId);
             Account firstAccount = accountRepository.findById(finalAccounts.get(0).getId());
             firstAccount.setMoneyAmount(firstAccount.getMoneyAmount().add(accountToDelete.getMoneyAmount()));
-            try {
-                accountRepository.deleteById(userId, accountId);
-            } catch (RuntimeException ex) {
-                throw new NoAccountException("Не найден аккаунт для удаления");
+            printAccountClosed(accountId);
+        } catch (NotEnoughAccountsException | FirstAccountClosedException ex) {
+            System.out.println(ex.getMessage());
+        }
+        try {
+            accountRepository.deleteById(userId, accountId);
+        } catch (RuntimeException ex) {
+            throw new NoAccountException("Не найден аккаунт для удаления");
             }
+        }
+
+    private void checkAccountListSizeEqualsOne(List<Account> accounts) {
+        if (accounts.size() == 1) {
+            throw new NotEnoughAccountsException("У пользователя всего один счет. Он не может его закрыть");
         }
     }
 
-    public Account makeDeposit(@NotNull Long accountId,
+    private void checkAccountSizeIsEmpty(List<Account> accounts) {
+        if (accounts.isEmpty()) {
+            throw new NotEnoughAccountsException("У пользователя нет счетов");
+        }
+    }
+
+    private void checkFirstAccountCanNotBeClosed(List<Account> accounts, Long accountId) {
+        if (accounts.get(0).getId().equals(accountId)) {
+            throw new FirstAccountClosedException("Нельзя закрыть первый аккаунт пользователя");
+        }
+    }
+
+    public void makeDeposit(@NotNull Long accountId,
                                @DecimalMin(value = "10.00") BigDecimal sum) {
         Account accountToMakeDeposit = accountRepository.findById(accountId);
         accountToMakeDeposit.setMoneyAmount(accountToMakeDeposit.getMoneyAmount().add(sum));
-        return accountToMakeDeposit;
+        printCurrentAmountMoney(accountToMakeDeposit);
     }
 
-    public Account transfer(@NotNull Long accountIdSender,
+    public void transfer(@NotNull Long accountIdSender,
                             @NotNull Long accountIdRecipient,
                             @DecimalMin(value = "10.00") BigDecimal sum) {
         Account senderAccount;
@@ -108,10 +130,10 @@ public class AccountService {
             checkSenderAccountEqualsRecipient(sender,recipient);
             recipientAccount.setMoneyAmount(recipientAccount.getMoneyAmount().add(sum.subtract(commission)));
             senderAccount.setMoneyAmount(senderAccount.getMoneyAmount().subtract(sum));
+            printCurrentAmountMoney(senderAccount);
         }catch(IdenticalAccountException | NotEnoughMoneyException | SameSenderException  ex){
             System.out.println(ex.getMessage());
         }
-        return senderAccount;
     }
     private void checkAccountEqualsRecipientAccount(Account senderAccount,Account recipientAccount){
         if (senderAccount.equals(recipientAccount)) {
@@ -132,15 +154,21 @@ public class AccountService {
 
     }
 
-    public Account withdraw(@NotNull Long accountId, @DecimalMin(value = "10.00") BigDecimal sum) {
+    public void withdraw(@NotNull Long accountId, @DecimalMin(value = "10.00") BigDecimal sum) {
         Account accountToWithdraw = accountRepository.findById(accountId);
         if (accountToWithdraw.getMoneyAmount().compareTo(sum) < 0) {
             throw new NotEnoughMoneyException("Недостаточно средств для снятия средств!");
         } else {
             accountToWithdraw.setMoneyAmount(accountToWithdraw.getMoneyAmount().subtract(sum));
+            printCurrentAmountMoney(accountToWithdraw);
         }
-        return accountToWithdraw;
     }
 
+    private void printCurrentAmountMoney(Account senderAccount) {
+        System.out.println("Текущее кол-во средств для аккаунта отправителя: " + senderAccount.getMoneyAmount());
+    }
 
+    private void printAccountClosed(Long accountId) {
+        System.out.println("Аккаунт закрыт c id: " + accountId + " закрыт");
+    }
 }
