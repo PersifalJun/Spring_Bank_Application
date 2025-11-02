@@ -135,7 +135,6 @@ public class OperationsConsoleListener {
         try {
             Long accountId = Long.parseLong(scanner.nextLine());
             accountService.closeAccount(accountId);
-            System.out.println("Аккаунт закрыт c id: " + accountId + " закрыт");
         } catch (ConstraintViolationException |
                  NotEnoughAccountsException | NoAccountException | NoUserException |
                  FirstAccountClosedException ex) {
@@ -149,8 +148,7 @@ public class OperationsConsoleListener {
         try {
             Long id = Long.parseLong(scanner.nextLine());
             BigDecimal sum = new BigDecimal(scanner.nextLine().trim());
-            Account accountToMakeDeposit = accountService.makeDeposit(id, sum);
-            System.out.println("Текущий счет: " + accountToMakeDeposit.getMoneyAmount() + " у аккаунта с Id: " + accountToMakeDeposit.getId());
+            accountService.makeDeposit(id, sum);
         } catch (ConstraintViolationException | NoAccountException ex) {
             System.out.println(ex.getMessage());
         } catch (NumberFormatException ex) {
@@ -163,8 +161,7 @@ public class OperationsConsoleListener {
             Long senderId = Long.parseLong(scanner.nextLine());
             Long recipientId = Long.parseLong(scanner.nextLine());
             BigDecimal sum = new BigDecimal(scanner.nextLine().trim());
-            Account senderAccount = accountService.transfer(senderId, recipientId, sum);
-            System.out.println("Текущее кол-во средств для аккаунта отправителя: " + senderAccount.getMoneyAmount());
+            accountService.transfer(senderId, recipientId, sum);
         } catch (ConstraintViolationException |
                  NotEnoughAccountsException | NoAccountException ex) {
             System.out.println(ex.getMessage());
@@ -177,8 +174,7 @@ public class OperationsConsoleListener {
         try {
             Long id = Long.parseLong(scanner.nextLine());
             BigDecimal sum = new BigDecimal(scanner.nextLine().trim());
-            Account accountToWithdraw = accountService.withdraw(id, sum);
-            System.out.println("Текущее кол-во средств после снятия: " + accountToWithdraw.getMoneyAmount());
+            accountService.withdraw(id, sum);
         } catch (ConstraintViolationException | NoAccountException |
                  NotEnoughMoneyException ex) {
             System.out.println(ex.getMessage());
